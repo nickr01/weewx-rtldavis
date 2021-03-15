@@ -13,7 +13,7 @@ Tested with the Realtek RTL2838UHIDIR.  Should work with any software-defined
 radio that is compatible with the rtl-sdr software. 
 
 Output from Davis Vantage Pro and Davis Vantage Vue stations is supported. 
-The driver supports currently the US and EU hop-frequencies.
+The driver supports currently the AU, NZ, US and EU hop-frequencies.
 
 ===============================================================================
 Installation
@@ -27,13 +27,15 @@ Installation
     eg: on raspberry pi:
     sudo apt-get install golang
 
-2) download the driver
+2) EITHER download the driver & install
 
 wget -O weewx-rtldavis-master.zip https://github.com/lheijst/weewx-rtldavis/archive/master.zip
 
-3) install the driver
-
 sudo wee_extension --install weewx-rtldavis-master.zip
+
+3) OR install the driver from this directory
+
+sudo wee_extension --install ../weewx-rtldavis
 
 4) configure the weewx driver
 
@@ -46,7 +48,8 @@ sudo wee_config --reconfigure --driver=user.rtldavis --no-prompt
 7) run the driver directly to identify the packets you want to capture
 
 cd /home/weewx
-sudo PYTHONPATH=bin python bin/user/rtldavis.py --cmd="/home/pi/work/bin/rtldavis"
+
+sudo PYTHONPATH=bin python bin/user/rtldavis.py --cmd="/home/nickr/work/bin/rtldavis"
 
 8) modify the [Rtldavis] section of weewx.conf using a text editor
 
