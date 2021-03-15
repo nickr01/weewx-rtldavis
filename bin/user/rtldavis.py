@@ -485,7 +485,7 @@ class ProcManager():
         lines = [] 
         # When a lot rtldavis packets are read, a hangup
         # will occur regularly, sometimes of more than a minute.
-        # Therefor a maximum run-time of get_stderr of 10 seconds 
+        # Therefore a maximum run-time of get_stderr of 10 seconds 
         # is invoked to let genLoopPackets process the yielded lines. 
         start_time = int(time.time())
         while self.running() and int(time.time()) - start_time < 10:
@@ -566,9 +566,9 @@ class CHANNELPacket(Packet):
                             dbg_rtld(3, "Store freqError%d: %s for transmitter: %s" % (y, int(m.group(3)), int(m.group(4))))
                     dbg_rtld(3, "chan_pkt: %s" % pkt)
                 else:
-                    dbg_rtld(3, "Don't store freqErr: %s for transm: %s" % (int(m.group(3)), int(m.group(4))))
+                    dbg_rtld(3, "Not storing freqErr: %s for transm: %s" % (int(m.group(3)), int(m.group(4))))
             else:
-                dbg_rtld(3, "Don't store freqErrors for frequency band %s" % self.frequency)
+                dbg_rtld(3, "Not storing freqErrors for frequency band %s" % self.frequency)
             lines.pop(0)
             return pkt
         else:
