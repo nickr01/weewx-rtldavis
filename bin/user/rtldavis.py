@@ -38,9 +38,9 @@ Run rtld on a thread and push the output onto a queue.
 
 [Rtldavis]
     # This section is for the rtldavis sdr-rtl USB receiver.
-    cmd = /home/pi/work/bin/rtldavis 
+    cmd = /home/nickr/work/bin/rtldavis 
 
-    # Radio frequency to use between USB transceiver and console: US, NZ or EU
+    # Country codes for Radio frequency to use between USB transceiver and console: AU, US, NZ or EU
     # US uses 915 MHz, NZ uses 921 MHz and EU uses 868.3 MHz.  Default is EU.
     transceiver_frequency = EU
     
@@ -134,9 +134,9 @@ if weewx.__version__ < "3":
 # To reduce other disturbances, place a sensor in about 2m distance for the first 
 # test.
 # 
-# Call with:  /home/pi/work/bin/rtldavis -tf [transceiver-frequency: US, NZ or EU] -tr [transmitters]} 
+# Call with:  /home/nickr/work/bin/rtldavis -tf [transceiver-frequency: AU, US, NZ or EU] -tr [transmitters]} 
 #
-DEFAULT_CMD = '/home/pi/work/bin/rtldavis -tf EU' 
+DEFAULT_CMD = '/home/nickr/work/bin/rtldavis -tf EU' 
 DEBUG_RAIN = 0
 DEBUG_PARSE = 0
 DEBUG_RTLD = 0
@@ -642,7 +642,7 @@ class RtldavisConfigurationEditor(weewx.drivers.AbstractConfEditor):
 [Rtldavis]
     # This section is for the rtldavis sdr-rtl USB receiver.
 
-    cmd = /home/pi/work/bin/rtldavis [options]
+    cmd = /home/nickr/work/bin/rtldavis [options]
     # Options:
     # -ppm = frequency correction of rtl dongle in ppm; default = 0
     # -gain = tuner gain in tenths of Db; default = 0 means "auto gain"
@@ -651,11 +651,11 @@ class RtldavisConfigurationEditor(weewx.drivers.AbstractConfEditor):
     # -u  = log undefined signals
     #
     # The options below will autoamically be set
-    # -tf = transmitter frequencies, US, NZ or EU
+    # -tf = transmitter frequencies, AU, US, NZ or EU
     # -tr = transmitters: tr1=1,  tr2=2,  tr3=4,  tr4=8, 
     #                     tr5=16, tr6=32, tr7=64, tr8=128
 
-    # Radio frequency to use between USB transceiver and console: US, NZ or EU
+    # Country code for frequency to use between USB transceiver and console: AU, US, NZ or EU
     # US uses 915 MHz, NZ uses 921 MHz and EU uses 868.3 MHz.  Default is EU.
     transceiver_frequency = EU
     
@@ -780,7 +780,7 @@ class RtldavisDriver(weewx.drivers.AbstractDevice, weewx.engine.StdService):
         self.ld_library_path = stn_dict.get('ld_library_path', None)
 
         freq = stn_dict.get('transceiver_frequency', self.DEFAULT_FREQUENCY)
-        if freq not in ['US', 'NZ', 'EU']:
+        if freq not in ['AU', 'US', 'NZ', 'EU']:
             raise ValueError("invalid frequency %s" % freq)
         self.frequency = freq
         loginf('using frequency %s' % self.frequency)
