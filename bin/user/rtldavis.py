@@ -142,6 +142,19 @@ DEBUG_PARSE = 0
 DEBUG_RTLD = 0
 MPH_TO_MPS = 1609.34 / 3600.0 # meter/mile * hour/second
 
+# Lookup table for Southern Hemisphere wind direction correction based on country (frequency) setting
+# In Southern Hemisphere need to orient solar panel North and anemometer South,
+# and add 180 wind calibration offset in wind direction in Console
+# Need to also do this here if want setup consistent with user manual and console 
+# Added by nickr01
+# This could also be useful dict to validate country codes
+WindDirOffset = {
+	'EU' : 0,
+	'US' : 0,
+	'AU' : 180,
+	'NZ' : 180
+}
+
 def loader(config_dict, engine):
     return RtldavisDriver(engine, config_dict)
 
@@ -783,6 +796,8 @@ class RtldavisDriver(weewx.drivers.AbstractDevice, weewx.engine.StdService):
         if freq not in ['AU', 'US', 'NZ', 'EU']:
             raise ValueError("invalid frequency %s" % freq)
         self.frequency = freq
+        self.windDirOffset = WindDirOffset[freq]
+
         loginf('using frequency %s' % self.frequency)
         channels = dict()
         channels['iss'] = int(stn_dict.get('iss_channel', 1))
@@ -1076,7 +1091,7 @@ class RtldavisDriver(weewx.drivers.AbstractDevice, weewx.engine.StdService):
 
                     data['wind_speed_ec'] = wind_speed_ec
                     data['wind_speed_raw'] = wind_speed_raw
-                    data['wind_dir'] = wind_dir_pro
+                    data['wind_dir'] = (wind_dir_pro + self.windDirOffset) % 360 
                     data['wind_speed'] = wind_speed_ec * MPH_TO_MPS
                     dbg_parse(2, "WS=%s WD=%s WS_raw=%s WS_ec=%s WD_raw=%s WD_pro=%s WD_vue=%s" %
                               (data['wind_speed'], data['wind_dir'],
