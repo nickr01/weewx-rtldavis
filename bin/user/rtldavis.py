@@ -27,7 +27,7 @@
 # This version of rtldavis.py works best with version 0.13 of main.go or higher.
 # For EU frequencies the freqError values are stored in the database in 
 # time slots of two days per transmitter (when activated).
-
+#
 """
 Collect data from rtldavis  
 see: https://github.com/bemasher/rtldavis
@@ -90,10 +90,11 @@ try:
 except ImportError:
     import queue            # python 3
 
+# crc check removed - already done at lower level (where should have stripped from packet)
 import weewx.drivers
 import weewx.engine
 import weewx.units
-from weewx.crc16 import crc16
+
 from weewx.units import obs_group_dict
 from weeutil.weeutil import tobool
 
@@ -534,9 +535,6 @@ class DATAPacket(Packet):
             dbg_rtld(2, "data: %s" % lines[0])
             raw_msg = [0] * 8
             for i in range(0, 8):
-                raw_msg[i] = chr(int(m.group(i + 1), 16))
-            PacketFactory._check_crc(raw_msg)
-            for i in range(0, 8):
                 raw_msg[i] = m.group(i + 1)
             raw_pkt = bytearray([int(i, base=16) for i in raw_msg])
             pkt = self.parse_raw(self, raw_pkt)
@@ -616,11 +614,6 @@ class PacketFactory(object):
         DATAPacket,
         CHANNELPacket
     ]
-
-    @staticmethod
-    def _check_crc(msg):
-        if crc16(msg) != 0:
-            raise ValueError("CRC error")
 
     @staticmethod
     def create(self, lines):
