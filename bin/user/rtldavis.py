@@ -867,21 +867,40 @@ class RtldavisDriver(weewx.drivers.AbstractDevice, weewx.engine.StdService):
             if self.sensor_map[k] in data:
                 packet[k] = data[self.sensor_map[k]]
         # convert the rain count to a rain delta measure
+        # and call it a delta so becomes self-documenting - NR 
+        # and do all the modulus calc in one place - NR
+        # it seems that VP2 has spurious wrap event - maybe timed resets after days without rain rate? NR
+        # Seen spurious rain events with old code
         if 'rain_count' in data:
-            if self.last_rain_count is not None:
-                rain_count = data['rain_count'] - self.last_rain_count
+            # setup
+            RAIN_COUNT_MODULUS = 128
+            new_rain_count = data['rain_count_raw'] % RAIN_COUNT_MODULUS
+            prev_rain_count = self.last_rain_count
+            
+            # precalc based on old reference
+            if self.last_rain_count is None:
+                rain_delta = 0
+            elif new_rain_count >= prev_rain_count:
+                rain_delta = new_rain_count - prev_rain_count
             else:
-                rain_count = 0
-            # handle rain counter wrap around from 127 to 0
-            if rain_count < 0:
-                loginf("rain counter wraparound detected rain_count=%s" %
-                       rain_count)
-                rain_count += 128
-            self.last_rain_count = data['rain_count']
-            packet['rain'] = float(rain_count) * self.rain_per_tip
+                # here if wrap event
+                if data['rain_rate'] > 0:
+                    rain_delta = (new_rain_count - prev_rain_count) + RAIN_COUNT_MODULUS
+                    loginf("rain counter wraparound calc rain_delta=%s prev_rain_count=%s" 
+                          % (rain_delta, prev_rain_count))
+                else:
+                    rain_delta = 0  # maybe should be 1 but diff is negligible
+                    loginf("rain counter wraparound detected with no rain rate: new_rain_count=%s prev_rain_count=%s" 
+                          % (new_rain_count, prev_rain_count))
+                
+            # save new reference count for next time
+            self.last_rain_count = new_rain_count
+
+            # calc output value to weewx packet
+            packet['rain'] = float(delta_rain_count) * self.rain_per_tip
             if DEBUG_RAIN:
-                logdbg("rain=%s rain_count=%s last_rain_count=%s" %
-                       (packet['rain'], rain_count, self.last_rain_count))
+                logdbg("rain=%s new_rain_count=%s delta_rain_count=%s prev_rain_count=%s" %
+                         (packet['rain'], new_rain_count, delta_rain_count, prev_rain_count))
         packet['dateTime'] = int(time.time() + 0.5)
         packet['usUnits'] = weewx.METRICWX
         return packet
@@ -1284,12 +1303,19 @@ class RtldavisDriver(weewx.drivers.AbstractDevice, weewx.engine.StdService):
                 """We have seen rain counters wrap around at 127 and
                 others wrap around at 255.  When we filter the highest
                 bit, both counter types will wrap at 127.
+                Certainly seems to be a 7 bit counter value in a late module VP2 - NR
+                If bit 7 set means no sensor then drop all packets with bit 7 set? - NR
+                Modulus calc better to take place all in one spot during loop processing - NR 
+                Simpler then to regard as a shortedmodulus counter ignoring bit 7? - NR
+                Otherwise undefined behaviour if bit 7 was set - NR 
+                Need to use same modulus in packet parser so best to define modulus with a single constant - NR 
+                Change use smaller modulus if wanted for debug - NR	
                 """
-                if rain_count_raw != 0x80:
-                    rain_count = rain_count_raw & 0x7F  # skip high bit
-                    data['rain_count'] = rain_count
-                    dbg_parse(2, "rain_count_raw=0x%02x value=%s" %
-                              (rain_count_raw, rain_count))
+                dbg_parse(2, "rain_count_raw=0x%02x" % rain_count_raw)
+                if (rain_count_raw & 0x80 ):
+                    loginf("rain counter packet out of range: rain_count_raw=0x%02x" % rain_count_raw)
+                else:
+                    data['rain_count_raw'] = rain_count_raw
             else:
                 # unknown message type
                 logerr("unknown message type 0x%01x" % message_type)
