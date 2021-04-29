@@ -1412,12 +1412,12 @@ Actions:
                     ld_library_path=options.ld_library_path)
         while mgr.running():
             for lines in mgr.get_stderr():
-                payload = lines[0].strip()
-                if payload:
-                    print(payload)
-                lines.pop(0)
+                for line in lines:
+                    payload = line.strip()
+                    if payload:
+                        print(payload)
             for lines in mgr.get_stdout():
-                err = lines[0].strip()
-                if err:
-                    print(err)
-                lines.pop(0)
+                for line in lines:
+                    err = line.strip()
+                    if err:
+                        print(err)
