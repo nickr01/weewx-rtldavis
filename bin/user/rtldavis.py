@@ -864,36 +864,33 @@ class RtldavisDriver(weewx.drivers.AbstractDevice, weewx.engine.StdService):
         # and do all the modulus calc in one place - NR
         # it seems that VP2 has spurious wrap event - maybe timed resets after days without rain rate? NR
         # Seen spurious rain events with old code
-        if 'rain_count' in data:
+        if 'rain_count_raw' in data:
             # setup
             RAIN_COUNT_MODULUS = 128
             new_rain_count = data['rain_count_raw'] % RAIN_COUNT_MODULUS
             prev_rain_count = self.last_rain_count
             
-            # precalc based on old reference
-            if self.last_rain_count is None:
+            # precalc based
+            if prev_rain_count is None:
                 rain_delta = 0
+                loginf("first rain count: new_rain_count=%s" % (new_rain_count))
             elif new_rain_count >= prev_rain_count:
                 rain_delta = new_rain_count - prev_rain_count
+                loginf("normal rain count calc: rain_delta=%s new_rain_count=%s prev_rain_count=%s" % (rain_delta, new_rain_count, prev_rain_count))
             else:
-                # here if wrap event
-                if data['rain_rate'] > 0:
-                    rain_delta = (new_rain_count - prev_rain_count) + RAIN_COUNT_MODULUS
-                    loginf("rain counter wraparound calc rain_delta=%s prev_rain_count=%s" 
-                          % (rain_delta, prev_rain_count))
-                else:
-                    rain_delta = 0  # maybe should be 1 but diff is negligible
-                    loginf("rain counter wraparound detected with no rain rate: new_rain_count=%s prev_rain_count=%s" 
-                          % (new_rain_count, prev_rain_count))
+                # here if wrap event - assume delta 0 and will never be significant error even if spurious/delayed event while no rain
+                rain_delta = 0 # (new_rain_count - prev_rain_count) + RAIN_COUNT_MODULUS
+                loginf("rain counter wraparound: rain_delta=%s new_rain_count=%s prev_rain_count=%s" 
+                          % (rain_delta, new_rain_count, prev_rain_count))
                 
             # save new reference count for next time
             self.last_rain_count = new_rain_count
 
             # calc output value to weewx packet
-            packet['rain'] = float(delta_rain_count) * self.rain_per_tip
+            packet['rain'] = float(rain_delta) * self.rain_per_tip
             if DEBUG_RAIN:
-                logdbg("rain=%s new_rain_count=%s delta_rain_count=%s prev_rain_count=%s" %
-                         (packet['rain'], new_rain_count, delta_rain_count, prev_rain_count))
+                logdbg("rain=%s new_rain_count=%s rain_delta=%s prev_rain_count=%s" %
+                         (packet['rain'], new_rain_count, rain_delta, prev_rain_count))
         packet['dateTime'] = int(time.time() + 0.5)
         packet['usUnits'] = weewx.METRICWX
         return packet
