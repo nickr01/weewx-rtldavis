@@ -38,11 +38,12 @@ Run rtld on a thread and push the output onto a queue.
 
 [Rtldavis]
     # This section is for the rtldavis sdr-rtl USB receiver.
-    cmd = /home/nickr/work/bin/rtldavis 
+    #cmd = /home/nickr/work/bin/rtldavis
+    cmd = /usr/local/bin/rs-rtldavis
 
     # Country codes for Radio frequency to use between USB transceiver and console: AU, US, NZ or EU
-    # US uses 915 MHz, NZ uses 921 MHz and EU uses 868.3 MHz.  Default is EU.
-    transceiver_frequency = EU
+    # US uses 915 MHz, NZ uses 921 MHz and EU uses 868.3 MHz.  Default is AU
+    transceiver_frequency = AU
     
     # Used channels: 0=not present, 1-8)
     # The channel of the Vantage Vue ISS or Vantage Pro or Pro2 ISS
@@ -86,7 +87,7 @@ import time
 
 # Python 2/3 compatiblity
 try:
-    import Queue as queue   # python 2
+    import badQueue as queue
 except ImportError:
     import queue            # python 3
 
@@ -113,7 +114,7 @@ def logerr(msg):
     log.error(msg)
 
 DRIVER_NAME = 'Rtldavis'
-DRIVER_VERSION = '0.20'
+DRIVER_VERSION = '0.21.2'
 
 weewx.units.obs_group_dict['frequency'] = 'group_frequency'
 weewx.units.USUnits['group_frequency'] = 'hertz'
@@ -137,7 +138,7 @@ if weewx.__version__ < "3":
 # 
 # Call with:  /home/nickr/work/bin/rtldavis -tf [transceiver-frequency: AU, US, NZ or EU] -tr [transmitters]} 
 #
-DEFAULT_CMD = '/home/nickr/work/bin/rtldavis -tf EU' 
+DEFAULT_CMD = '/usr/local/bin/rs-rtldavis -tf AU' 
 DEBUG_RAIN = 0
 DEBUG_PARSE = 0
 DEBUG_RTLD = 0
@@ -1016,8 +1017,10 @@ class RtldavisDriver(weewx.drivers.AbstractDevice, weewx.engine.StdService):
                 raise weewx.WeeWxIOError("rtldavis process stalled")
             # program main.go writes its data to stderr
             for lines in self._mgr.get_stderr():
+                print('lines from stderr');
                 for data in PacketFactory.create(self, lines):
                     if data:
+                        print('weewx-rtldavis: %s',data);
                         time_last_received = int(time.time())
                         if 'curr_cnt0' in data:
                             self._update_stats(data['curr_cnt0'], data['curr_cnt1'], data['curr_cnt2'], data['curr_cnt3'])
@@ -1430,17 +1433,18 @@ Actions:
 
     if options.action == 'show-packets':
         # display output and parsed/unparsed packets
+        print('starting show-packets from cmd="',options.cmd,'" - NB not parsed')
         mgr = ProcManager()
         mgr.startup(options.cmd, path=options.path,
                     ld_library_path=options.ld_library_path)
         while mgr.running():
             for lines in mgr.get_stderr():
                 for line in lines:
-                    payload = line.strip()
-                    if payload:
-                        print(payload)
+                    s = line.strip()
+                    if s:
+                        print('stderr:', s)
             for lines in mgr.get_stdout():
                 for line in lines:
-                    err = line.strip()
-                    if err:
-                        print(err)
+                    s = line.strip()
+                    if s:
+                        print('stdout:', s)
