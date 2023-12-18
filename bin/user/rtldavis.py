@@ -78,7 +78,13 @@ import signal
 from calendar import timegm
 import fnmatch
 import os
-import re
+
+#import re
+# re changed in Python3.7 
+# regex module allows some control of behaviour
+import regex as re
+re.DEFAULT_VERSION=re.V1
+
 import subprocess
 import math
 import string
@@ -86,10 +92,10 @@ import threading
 import time
 
 # Python 2/3 compatiblity
-try:
-    import badQueue as queue
-except ImportError:
-    import queue            # python 3
+#try:
+#    import badQueue as queue
+#except ImportError:
+import queue            # python 3 only
 
 # crc check removed - already done at lower level (where should have stripped from packet)
 import weewx.drivers
@@ -114,7 +120,7 @@ def logerr(msg):
     log.error(msg)
 
 DRIVER_NAME = 'Rtldavis'
-DRIVER_VERSION = '0.21.2'
+DRIVER_VERSION = '0.21.3'
 
 weewx.units.obs_group_dict['frequency'] = 'group_frequency'
 weewx.units.USUnits['group_frequency'] = 'hertz'
