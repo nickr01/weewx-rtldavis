@@ -120,7 +120,7 @@ def logerr(msg):
     log.error(msg)
 
 DRIVER_NAME = 'Rtldavis'
-DRIVER_VERSION = '0.21.3'
+DRIVER_VERSION = '0.21.4'
 
 weewx.units.obs_group_dict['frequency'] = 'group_frequency'
 weewx.units.USUnits['group_frequency'] = 'hertz'
@@ -1377,7 +1377,7 @@ class RtldavisDriver(weewx.drivers.AbstractDevice, weewx.engine.StdService):
 
         else:
             logerr("unknown station with channel: %s, raw message: %s" %
-                   (data['channel'], raw))
+                   (data['channel'], pkt))
         return data
 
     @staticmethod
