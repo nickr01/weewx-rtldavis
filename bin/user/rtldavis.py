@@ -25,11 +25,11 @@
 #
 # 27-04-2020 release note:
 # This version of rtldavis.py works best with version 0.13 of main.go or higher.
-# For EU frequencies the freqError values are stored in the database in 
+# For EU frequencies the freqError values are stored in the database in
 # time slots of two days per transmitter (when activated).
 #
 """
-Collect data from rtldavis  
+Collect data from rtldavis
 see: https://github.com/bemasher/rtldavis
 
 Run rtld on a thread and push the output onto a queue.
@@ -44,7 +44,7 @@ Run rtld on a thread and push the output onto a queue.
     # Country codes for Radio frequency to use between USB transceiver and console: AU, US, NZ or EU
     # US uses 915 MHz, NZ uses 921 MHz and EU uses 868.3 MHz.  Default is AU
     transceiver_frequency = AU
-    
+
     # Used channels: 0=not present, 1-8)
     # The channel of the Vantage Vue ISS or Vantage Pro or Pro2 ISS
     iss_channel = 1
@@ -55,7 +55,7 @@ Run rtld on a thread and push the output onto a queue.
     temp_hum_2_channel = 0
     # rain bucket type (0: 0.01 inch, 1: 0.2 mm)
     rain_bucket_type = 1
-    
+
     # Print debug messages
     # 0=no logging; 1=minimum logging; 2=normal logging; 3=detailed logging
     debug_parse = 0
@@ -80,7 +80,7 @@ import fnmatch
 import os
 
 #import re
-# re changed in Python3.7 
+# re changed in Python3.7
 # regex module allows some control of behaviour
 import regex as re
 re.DEFAULT_VERSION=re.V1
@@ -120,7 +120,7 @@ def logerr(msg):
     log.error(msg)
 
 DRIVER_NAME = 'Rtldavis'
-DRIVER_VERSION = '0.21.4'
+DRIVER_VERSION = '0.21.5'
 
 weewx.units.obs_group_dict['frequency'] = 'group_frequency'
 weewx.units.USUnits['group_frequency'] = 'hertz'
@@ -135,16 +135,16 @@ if weewx.__version__ < "3":
 
 # Rtldavis Usage
 #
-# For 868MHz the usually supplied 10cm DVB-T antenna stick is well suited. Make 
-# sure that it is placed on a small metallic ground plane. Avoid near WLAN, DECT 
+# For 868MHz the usually supplied 10cm DVB-T antenna stick is well suited. Make
+# sure that it is placed on a small metallic ground plane. Avoid near WLAN, DECT
 # or other RF stuff that may disturb the SDR stick.
-# 
-# To reduce other disturbances, place a sensor in about 2m distance for the first 
-# test.
-# 
-# Call with:  /home/nickr/work/bin/rtldavis -tf [transceiver-frequency: AU, US, NZ or EU] -tr [transmitters]} 
 #
-DEFAULT_CMD = '/usr/local/bin/rs-rtldavis -tf AU' 
+# To reduce other disturbances, place a sensor in about 2m distance for the first
+# test.
+#
+# Call with:  /home/nickr/work/bin/rtldavis -tf [transceiver-frequency: AU, US, NZ or EU] -tr [transmitters]}
+#
+DEFAULT_CMD = '/usr/local/bin/rs-rtldavis -tf AU'
 DEBUG_RAIN = 0
 DEBUG_PARSE = 0
 DEBUG_RTLD = 0
@@ -153,7 +153,7 @@ MPH_TO_MPS = 1609.34 / 3600.0 # meter/mile * hour/second
 # Lookup table for Southern Hemisphere wind direction correction based on country (frequency) setting
 # In Southern Hemisphere need to orient solar panel North and anemometer South,
 # and add 180 wind calibration offset in wind direction in Console
-# Need to also do this here if want setup consistent with user manual and console 
+# Need to also do this here if want setup consistent with user manual and console
 # Added by nickr01
 # This could also be useful dict to validate country codes
 WindDirOffset = {
@@ -503,22 +503,10 @@ class ProcManager():
         return lines
 
     def get_stderr(self):
-        lines = [] 
-        # When a lot rtldavis packets are read, a hangup
-        # will occur regularly, sometimes of more than a minute.
-        # Therefore a maximum run-time of get_stderr of 10 seconds 
-        # is invoked to let genLoopPackets process the yielded lines. 
-        start_time = int(time.time())
-        while self.running() and int(time.time()) - start_time < 10:
-            try:             
-                line = self.stderr_queue.get(True, 10).decode('utf-8')
-                lines.append(line) 
-                yield lines
-                lines = []
-            except queue.Empty:
-                yield lines
-                lines = []
-
+        lines = []
+        while not self.stderr_queue.empty():
+            lines.append(self.stderr_queue.get().decode('utf-8'))
+        return lines
 
 class Packet:
 
@@ -665,13 +653,13 @@ class RtldavisConfigurationEditor(weewx.drivers.AbstractConfEditor):
     #
     # The options below will autoamically be set
     # -tf = transmitter frequencies, AU, US, NZ or EU
-    # -tr = transmitters: tr1=1,  tr2=2,  tr3=4,  tr4=8, 
+    # -tr = transmitters: tr1=1,  tr2=2,  tr3=4,  tr4=8,
     #                     tr5=16, tr6=32, tr7=64, tr8=128
 
     # Country code for frequency to use between USB transceiver and console: AU, US, NZ or EU
     # US uses 915 MHz, NZ uses 921 MHz and EU uses 868.3 MHz.  Default is EU.
     transceiver_frequency = EU
-    
+
     # Used channels: 0=not present, 1-8)
     # The channel of the Vantage Vue ISS or Vantage Pro or Pro2 ISS
     iss_channel = 1
@@ -682,7 +670,7 @@ class RtldavisConfigurationEditor(weewx.drivers.AbstractConfEditor):
     temp_hum_2_channel = 0
     # rain bucket type (0: 0.01 inch, 1: 0.2 mm)
     rain_bucket_type = 1
-    
+
     # Print debug messages
     # 0=no logging; 1=minimum logging; 2=normal logging; 3=detailed logging
     debug_parse = 0
@@ -734,7 +722,7 @@ class RtldavisDriver(weewx.drivers.AbstractDevice, weewx.engine.StdService):
         'soilMoist4': 'soil_moisture_4',
         'leafWet1': 'leaf_wetness_1',
         'leafWet2': 'leaf_wetness_2',
-        'rxCheckPercent': 'pct_good_all', # updated in 
+        'rxCheckPercent': 'pct_good_all', # updated in
         'txBatteryStatus': 'bat_iss',
         'supplyVoltage': 'supercap_volt',
         'referenceVoltage': 'solar_power',
@@ -816,7 +804,7 @@ class RtldavisDriver(weewx.drivers.AbstractDevice, weewx.engine.StdService):
         loginf('using temp_hum_1_channel %s' % channels['temp_hum_1'])
         loginf('using temp_hum_2_channel %s' % channels['temp_hum_2'])
 
-        self.transmitters, self.tr_count = RtldavisDriver.ch_to_xmit(self, 
+        self.transmitters, self.tr_count = RtldavisDriver.ch_to_xmit(self,
             channels['iss'], channels['anemometer'], channels['leaf_soil'],
             channels['temp_hum_1'], channels['temp_hum_2'])
         loginf('using transmitters %d' % self.transmitters)
@@ -867,7 +855,7 @@ class RtldavisDriver(weewx.drivers.AbstractDevice, weewx.engine.StdService):
             if self.sensor_map[k] in data:
                 packet[k] = data[self.sensor_map[k]]
         # convert the rain count to a rain delta measure
-        # and call it a delta so becomes self-documenting - NR 
+        # and call it a delta so becomes self-documenting - NR
         # and do all the modulus calc in one place - NR
         # it seems that VP2 has spurious wrap event - maybe timed resets after days without rain rate? NR
         # Seen spurious rain events with old code
@@ -876,7 +864,7 @@ class RtldavisDriver(weewx.drivers.AbstractDevice, weewx.engine.StdService):
             RAIN_COUNT_MODULUS = 128
             new_rain_count = data['rain_count_raw'] % RAIN_COUNT_MODULUS
             prev_rain_count = self.last_rain_count
-            
+
             # precalc based
             if prev_rain_count is None:
                 rain_delta = 0
@@ -887,9 +875,9 @@ class RtldavisDriver(weewx.drivers.AbstractDevice, weewx.engine.StdService):
             else:
                 # here if wrap event - assume delta 0 and will never be significant error even if spurious/delayed event while no rain
                 rain_delta = 0 # (new_rain_count - prev_rain_count) + RAIN_COUNT_MODULUS
-                loginf("rain counter wraparound: rain_delta=%s new_rain_count=%s prev_rain_count=%s" 
+                loginf("rain counter wraparound: rain_delta=%s new_rain_count=%s prev_rain_count=%s"
                           % (rain_delta, new_rain_count, prev_rain_count))
-                
+
             # save new reference count for next time
             self.last_rain_count = new_rain_count
 
@@ -908,12 +896,12 @@ class RtldavisDriver(weewx.drivers.AbstractDevice, weewx.engine.StdService):
             'loop_times': [2.5625, 2.625, 2.6875, 2.75, 2.8125, 2.875, 2.9375, 3, 100.0],
             'activeTrIds': [9] * 8,    # 9 means: sensor not active
             'activeTrIdPtrs': [0] * 8, # pointer to active transmitter
-            'curr_ts': 0,              # time stamp of current archive  
+            'curr_ts': 0,              # time stamp of current archive
             'last_ts': 0,              # time stamp of previous archive
             'curr_cnt': [0] * 4,       # received messages since startup at current archive
             'last_cnt': [0] * 4,       # received messages since startup at previous archive
             'max_count': [0] * 4,      # max to receive messages per transmitter current archive period
-            'count': [0] * 4,          # received messages per transmitter current archive period 
+            'count': [0] * 4,          # received messages per transmitter current archive period
             'missed': [0] * 4,         # missed messages per transmitter current archive period
             'pct_good': [None] * 4,    # percentage of good messages per transmitter
             'pct_good_all': None}      # percentage of good messages for all transmitters
@@ -965,13 +953,13 @@ class RtldavisDriver(weewx.drivers.AbstractDevice, weewx.engine.StdService):
             # if there is a total
             if total_max_count > 0 and self.stats['pct_good_all'] is not None:
                 self.stats['pct_good_all'] = 100.0 * total_count / total_max_count
-                logdbg("ARCHIVE_STATS: total_max_count=%d total_count=%d total_missed=%d  pctGood=%6.2f" % 
+                logdbg("ARCHIVE_STATS: total_max_count=%d total_count=%d total_missed=%d  pctGood=%6.2f" %
                     (total_max_count, total_count, total_missed, self.stats['pct_good_all']))
             # log the stats for each active transmitter and no-init-counters
             for i in range(0, 4):
                 if self.stats['curr_cnt'][i] > 0 and self.stats['count'][i] > 0 and self.stats['pct_good'] is not None:
                     x = self.stats['activeTrIds'][i]
-                    logdbg("ARCHIVE_STATS: station %d: max_count= %4d count=%4d missed=%4d pct_good=%6.2f" % 
+                    logdbg("ARCHIVE_STATS: station %d: max_count= %4d count=%4d missed=%4d pct_good=%6.2f" %
                         (i+1, self.stats['max_count'][i], self.stats['count'][i], self.stats['missed'][i], self.stats['pct_good'][i]))
 
     def new_archive_record(self, event):
@@ -1009,13 +997,13 @@ class RtldavisDriver(weewx.drivers.AbstractDevice, weewx.engine.StdService):
     def genLoopPackets(self):
         packet = dict()
         time_last_received = int(time.time())
-        # change the presentation of the FrequencyErrors of the transmitters 
+        # change the presentation of the FrequencyErrors of the transmitters
         #  each period
         periodShowOneTransm = 2*24*3600  # 2 days
         rel_transm_to_store = int(((time_last_received-(3*3600)) % (periodShowOneTransm * self.tr_count)) / periodShowOneTransm)
         self.transm_to_store = self.stats['activeTrIds'][rel_transm_to_store]
         dbg_parse(1, "Number of transmitters: %s, store freqError data for transmitter with ID=%s" % (self.tr_count, self.transm_to_store))
-        
+
         while self._mgr.running():
             # the stalled timeout must be greater than the init period
             # init period is EU: 16 s, US, AU and NZ: 133 s
@@ -1109,7 +1097,7 @@ class RtldavisDriver(weewx.drivers.AbstractDevice, weewx.engine.StdService):
 
                     data['wind_speed_ec'] = wind_speed_ec
                     data['wind_speed_raw'] = wind_speed_raw
-                    data['wind_dir'] = (wind_dir_pro + self.windDirOffset) % 360 
+                    data['wind_dir'] = (wind_dir_pro + self.windDirOffset) % 360
                     data['wind_speed'] = wind_speed_ec * MPH_TO_MPS
                     dbg_parse(2, "WS=%s WD=%s WS_raw=%s WS_ec=%s WD_raw=%s WD_pro=%s WD_vue=%s" %
                               (data['wind_speed'], data['wind_dir'],
@@ -1304,11 +1292,11 @@ class RtldavisDriver(weewx.drivers.AbstractDevice, weewx.engine.StdService):
                 bit, both counter types will wrap at 127.
                 Certainly seems to be a 7 bit counter value in a late module VP2 - NR
                 If bit 7 set means no sensor then drop all packets with bit 7 set? - NR
-                Modulus calc better to take place all in one spot during loop processing - NR 
+                Modulus calc better to take place all in one spot during loop processing - NR
                 Simpler then to regard as a shortedmodulus counter ignoring bit 7? - NR
-                Otherwise undefined behaviour if bit 7 was set - NR 
-                Need to use same modulus in packet parser so best to define modulus with a single constant - NR 
-                Change use smaller modulus if wanted for debug - NR	
+                Otherwise undefined behaviour if bit 7 was set - NR
+                Need to use same modulus in packet parser so best to define modulus with a single constant - NR
+                Change use smaller modulus if wanted for debug - NR
                 """
                 dbg_parse(2, "rain_count_raw=0x%02x" % rain_count_raw)
                 if (rain_count_raw & 0x80 ):
@@ -1393,7 +1381,7 @@ class RtldavisDriver(weewx.drivers.AbstractDevice, weewx.engine.StdService):
         obs_group_dict['heatingVoltage']    = 'group_frequency'
 
 
-############################## Conf Editor ############################## 
+############################## Conf Editor ##############################
 
 if __name__ == '__main__':
     import optparse
@@ -1406,7 +1394,7 @@ if __name__ == '__main__':
     weeutil.logger.setup('rtldavis', {})
 
     usage = """%prog [--debug] [--help] [--version]
-        [--action=(show-packets] [--cmd=RTL_CMD] 
+        [--action=(show-packets] [--cmd=RTL_CMD]
         [--path=PATH] [--ld_library_path=LD_LIBRARY_PATH]
 
 Actions:
