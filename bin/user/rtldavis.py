@@ -506,7 +506,7 @@ class ProcManager():
         lines = []
         while not self.stderr_queue.empty():
             lines.append(self.stderr_queue.get().decode('utf-8'))
-        return lines
+        yield lines
 
 class Packet:
 
