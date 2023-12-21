@@ -120,7 +120,7 @@ def logerr(msg):
     log.error(msg)
 
 DRIVER_NAME = 'Rtldavis'
-DRIVER_VERSION = '0.21.5'
+DRIVER_VERSION = '0.21.6'
 
 weewx.units.obs_group_dict['frequency'] = 'group_frequency'
 weewx.units.USUnits['group_frequency'] = 'hertz'
@@ -443,6 +443,7 @@ class ProcManager():
 
     def __init__(self):
         self._cmd = None
+        self._pidname = None
         self._process = None
         self.stderr_queue = queue.Queue()
         self.stderr_reader = None
@@ -453,16 +454,19 @@ class ProcManager():
         return map(int,check_output(["pidof",name]).split())
 
     def startup(self, cmd, path=None, ld_library_path=None):
-        # kill existiing rtld processes
+        self._cmd = cmd
+        self._pidname = os.path.basename(cmd).split(' ')[0]
+        loginf("rtlsdr lowlevel driver process name is %s" % self._pidname) 
+
+        # kill existing rtld processes
         try:
-            pid_list = self.get_pid("rtldavis")
+            pid_list = self.get_pid(self._pidname)
             for pid in pid_list:
                 os.kill(int(pid), signal.SIGKILL)
-                loginf("rtldavis with pid %s killed" % pid)
+                loginf("process named %s with pid %s tried kill" % (self._pidname, pid))
         except:
             pass
 
-        self._cmd = cmd
         loginf("startup process '%s'" % self._cmd)
         env = os.environ.copy()
         if path:
@@ -488,10 +492,10 @@ class ProcManager():
         self.stderr_reader.stop_running()
         self.stdout_reader.stop_running()
         # kill existiing rtldavis processes
-        pid_list = self.get_pid("rtldavis")
+        pid_list = self.get_pid(self._pidname)
         for pid in pid_list:
             os.kill(int(pid), signal.SIGKILL)
-            loginf("rtldavis with pid %s killed" % pid)
+            loginf("process named %s with pid %s killed" % (self._pidname, pid))
 
     def running(self):
         return self._process.poll() is None
